@@ -48,25 +48,28 @@ class TwixtGame:
     def place_pin(self, x, y):
         if self.is_valid_move(x, y):
             self.board[x][y] = self.current_player
-            if self.check_win(x, y):
+            if self.check_win():
                 self.game_over = True
+                self.print_board()
                 print(Fore.RED + f"player {self.current_player} wins!" + Style.RESET_ALL if self.current_player == PLAYER_1 else Fore.BLUE + f"player {self.current_player} wins!" + Style.RESET_ALL)
             else:
                 self.current_player = PLAYER_2 if self.current_player == PLAYER_1 else PLAYER_1
             return True
         return False
 
-    def check_win(self, x, y):
+    def check_win(self):
         if self.current_player == PLAYER_1:
-            if x == 0:
-                for j in range(BOARD_SIZE):
-                    if self.board[BOARD_SIZE-1][j] == PLAYER_1 and self.check_connection(0, y, BOARD_SIZE-1, j):
-                        return True
-        else:        
-            if y == 0:
-                for i in range(BOARD_SIZE):
-                    if self.board[i][BOARD_SIZE-1] == PLAYER_2 and self.check_connection(x, 0, i, BOARD_SIZE-1):
-                        return True
+            for start_y in range(BOARD_SIZE):
+                if self.board[0][start_y] == PLAYER_1:
+                    for end_y in range(BOARD_SIZE):
+                        if self.board[BOARD_SIZE-1][end_y] == PLAYER_1 and self.check_connection(0, start_y, BOARD_SIZE-1, end_y):
+                            return True
+        else:
+            for start_x in range(BOARD_SIZE):
+                if self.board[start_x][0] == PLAYER_2:
+                    for end_x in range(BOARD_SIZE):
+                        if self.board[end_x][BOARD_SIZE-1] == PLAYER_2 and self.check_connection(start_x, 0, end_x, BOARD_SIZE-1):
+                            return True
         return False
 
     def check_connection(self, start_x, start_y, target_x, target_y):
