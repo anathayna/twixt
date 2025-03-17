@@ -1,7 +1,6 @@
-import sys
 from colorama import Fore, Style, init
 
-init()
+init() # init colorama
 
 BOARD_SIZE = 6
 
@@ -86,6 +85,16 @@ class TwixtGame:
                     if 0 <= nx < BOARD_SIZE and 0 <= ny < BOARD_SIZE and self.board[nx][ny] == self.current_player:
                         stack.append((nx, ny))
         return False
+    
+    def get_successor_states(self):
+        successor_states = []
+        for i in range(BOARD_SIZE):
+            for j in range(BOARD_SIZE):
+                if self.board[i][j] == EMPTY:
+                    new_board = [row[:] for row in self.board]
+                    new_board[i][j] = self.current_player
+                    successor_states.append(new_board)
+        return successor_states
 
     def play(self):
         print(Fore.RED + "player 1 (X) connect top to bottom." + Style.RESET_ALL)
