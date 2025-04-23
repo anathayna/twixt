@@ -10,8 +10,8 @@ PLAYER_2 = 'O'  # Player 2 (BLUE)
 EMPTY = '.'
 
 DIRECTIONS = [(-1, -1), (-1, 0), (-1, 1),
-              (0, -1),          (0, 1),
-              (1, -1),  (1, 0), (1, 1)]
+              (0, -1),           (0, 1),
+              (1, -1),  (1, 0),  (1, 1)]
 
 class TwixtGame:
     def __init__(self):
@@ -48,14 +48,22 @@ class TwixtGame:
 
     def place_pin(self, x, y):
         if self.is_valid_move(x, y):
+            #print(f"current player: {self.current_player}")
             self.board[x][y] = self.current_player
             if self.check_win():
                 self.game_over = True
                 self.winner = self.current_player
                 self.print_board()
-                print(Fore.RED + f"player {self.current_player} wins!" + Style.RESET_ALL if self.current_player == PLAYER_1 else Fore.BLUE + f"player {self.current_player} wins!" + Style.RESET_ALL)
+                if self.current_player == PLAYER_1:
+                    print(Fore.RED + "Player 1 (X) wins!" + Style.RESET_ALL)
+                else:
+                    print(Fore.BLUE + "Player 2 (O - AI) wins!" + Style.RESET_ALL)
             else:
                 self.current_player = PLAYER_2 if self.current_player == PLAYER_1 else PLAYER_1
+                if not self.get_valid_moves():
+                    self.game_over = True
+                    self.winner = None
+                    print("game over!")
             return True
         return False
 
@@ -72,13 +80,20 @@ class TwixtGame:
                     for end_x in range(BOARD_SIZE):
                         if self.board[end_x][BOARD_SIZE-1] == PLAYER_2 and self.check_connection(start_x, 0, end_x, BOARD_SIZE-1):
                             return True
+                        
+            for start_x in range(BOARD_SIZE):
+                if self.board[start_x][BOARD_SIZE-1] == PLAYER_2:
+                    for end_x in range(BOARD_SIZE):
+                        if self.board[end_x][0] == PLAYER_2 and self.check_connection(start_x, BOARD_SIZE-1, end_x, 0):
+                            return True
         return False
 
     def check_connection(self, start_x, start_y, target_x, target_y):
         visited = [[False for _ in range(BOARD_SIZE)] for _ in range(BOARD_SIZE)]
-        stack = [(start_x, start_y)]
-        while stack:
-            cx, cy = stack.pop()
+        nodes_to_visit = [(start_x, start_y)]
+        while nodes_to_visit:
+            cx, cy = nodes_to_visit.pop()
+            #print(f"visiting node: ({cx}, {cy})")
             if cx == target_x and cy == target_y:
                 return True
             if not visited[cx][cy]:
@@ -86,7 +101,8 @@ class TwixtGame:
                 for dx, dy in DIRECTIONS:
                     nx, ny = cx + dx, cy + dy
                     if 0 <= nx < BOARD_SIZE and 0 <= ny < BOARD_SIZE and self.board[nx][ny] == self.current_player:
-                        stack.append((nx, ny))
+                        visited[nx][ny] = True
+                        nodes_to_visit.append((nx, ny))
         return False
     
     def get_valid_moves(self):
@@ -129,35 +145,32 @@ class TwixtGame:
             else:
                 return 0
         
-        # Heurística 1: Contagem de peças conectadas potencialmente vencedoras
+        # heurística 1: contagem de peças conectadas potencialmente vencedoras
         player1_score = self.evaluate_player(PLAYER_1)
         player2_score = self.evaluate_player(PLAYER_2)
         
-        # Heurística 2: Mobilidade - número de movimentos possíveis
-        mobility = len(self.get_valid_moves())
+        # heurística 2: número de movimentos possíveis
+        valid_moves = len(self.get_valid_moves())
         
-        # Heurística 3: Posições estratégicas (cantos e centro)
-        strategic_pos = self.evaluate_strategic_positions()
+        # heurística 3: posições estratégicas (cantos e centro)
+        strategic_position = self.evaluate_strategic_positions()
         
-        # Combinando as heurísticas com pesos
-        score = (player1_score - player2_score) + 0.1 * mobility + 0.2 * strategic_pos
+        score = (player1_score - player2_score) + 0.1 * valid_moves + 0.2 * strategic_position
         
+        #print(f"evaluation - player 1: {player1_score}, player 2: {player2_score}, score: {score}")
         return score
     
     def evaluate_player(self, player):
         score = 0
         if player == PLAYER_1:
-            # Verifica conexões de cima para baixo
             for y in range(BOARD_SIZE):
                 if self.board[0][y] == PLAYER_1:
                     for y2 in range(BOARD_SIZE):
                         if self.board[BOARD_SIZE-1][y2] == PLAYER_1:
-                            # Quanto mais perto de conectar, maior a pontuação
                             distance = self.find_connection_distance(0, y, BOARD_SIZE-1, y2, player)
                             if distance != -1:
                                 score += (BOARD_SIZE - distance) * 10
         else:
-            # Verifica conexões da esquerda para direita
             for x in range(BOARD_SIZE):
                 if self.board[x][0] == PLAYER_2:
                     for x2 in range(BOARD_SIZE):
@@ -166,14 +179,12 @@ class TwixtGame:
                             if distance != -1:
                                 score += (BOARD_SIZE - distance) * 10
         
-        # Pontua por peças conectadas em geral
         connected = self.count_connection(player)
         score += connected * 2
         
         return score
     
     def find_connection_distance(self, x1, y1, x2, y2, player):
-        """Encontra a distância do caminho mais curto entre dois pontos"""
         visited = [[False for _ in range(BOARD_SIZE)] for _ in range(BOARD_SIZE)]
         queue = [(x1, y1, 0)]
         visited[x1][y1] = True
@@ -185,8 +196,7 @@ class TwixtGame:
             
             for dx, dy in DIRECTIONS:
                 nx, ny = cx + dx, cy + dy
-                if 0 <= nx < BOARD_SIZE and 0 <= ny < BOARD_SIZE:
-                    if not visited[nx][ny] and (self.board[nx][ny] == player or (nx, ny) == (x2, y2)):
+                if 0 <= nx < BOARD_SIZE and 0 <= ny < BOARD_SIZE and not visited[nx][ny] and (self.board[nx][ny] == player or (nx, ny) == (x2, y2)):
                         visited[nx][ny] = True
                         queue.append((nx, ny, dist + 1))
         
@@ -204,17 +214,14 @@ class TwixtGame:
         return count
     
     def evaluate_strategic_positions(self):
-        """Avalia posições estratégicas no tabuleiro"""
         score = 0
         center = BOARD_SIZE // 2
         for i in range(BOARD_SIZE):
             for j in range(BOARD_SIZE):
                 if self.board[i][j] == PLAYER_1:
-                    # Posições centrais são mais valiosas para o jogador 1
                     distance_to_center = abs(i - center) + abs(j - center)
                     score += (BOARD_SIZE - distance_to_center)
                 elif self.board[i][j] == PLAYER_2:
-                    # Cantos são mais valiosos para o jogador 2
                     distance_to_corner = min(i + j, i + (BOARD_SIZE-1 - j), 
                                             (BOARD_SIZE-1 - i) + j, (BOARD_SIZE-1 - i) + (BOARD_SIZE-1 - j))
                     score -= (BOARD_SIZE - distance_to_corner)

@@ -19,19 +19,19 @@ class AIPlayer:
             successor = self.game.successor_func(move)
             if successor:
                 if self.game.current_player == self.player:
-                    value = self.minimax(successor, self.depth - 1, -math.inf, math.inf, False)
+                    value = self.minimax_alphabeta(successor, self.depth - 1, -math.inf, math.inf, False)
                     if value > best_value:
                         best_value = value
                         best_move = move
                 else:
-                    value = self.minimax(successor, self.depth - 1, -math.inf, math.inf, True)
+                    value = self.minimax_alphabeta(successor, self.depth - 1, -math.inf, math.inf, True)
                     if value < best_value:
                         best_value = value
                         best_move = move
         
         return best_move
     
-    def minimax(self, game_state, depth, alpha, beta, maximizing_player):
+    def minimax_alphabeta(self, game_state, depth, alpha, beta, maximizing_player):
         if depth == 0 or game_state.is_game_over():
             return game_state.evaluate_func()
         
@@ -44,7 +44,7 @@ class AIPlayer:
             for move in legal_moves:
                 successor = game_state.successor_func(move)
                 if successor:
-                    value = max(value, self.minimax(successor, depth - 1, alpha, beta, False))
+                    value = max(value, self.minimax_alphabeta(successor, depth - 1, alpha, beta, False))
                     alpha = max(alpha, value)
                     if alpha >= beta:
                         break
@@ -54,7 +54,7 @@ class AIPlayer:
             for move in legal_moves:
                 successor = game_state.successor_func(move)
                 if successor:
-                    value = min(value, self.minimax(successor, depth - 1, alpha, beta, True))
+                    value = min(value, self.minimax_alphabeta(successor, depth - 1, alpha, beta, True))
                     beta = min(beta, value)
                     if alpha >= beta:
                         break
