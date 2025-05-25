@@ -23,5 +23,15 @@ def main():
             print(Fore.BLUE + "AI's turn (O)" + Style.RESET_ALL)
             ai_player.make_move()
 
+    if game.game_over:
+        game.print_board()
+        if game.winner == PLAYER_1:
+            print(Fore.RED + "X wins!" + Style.RESET_ALL)
+        elif game.winner == PLAYER_2:
+            print(Fore.BLUE + "IA (0) wins!" + Style.RESET_ALL)
+        else:
+            print("draw!")
+
+
 if __name__ == "__main__":
     main()

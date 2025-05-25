@@ -9,55 +9,41 @@ class AIPlayer:
     
     def get_best_move(self):
         best_move = None
-        best_value = -math.inf if self.game.current_player == self.player else math.inf
-        
+        best_value = -math.inf
         legal_moves = self.game.get_valid_moves()
-        if not legal_moves:
-            return None
         
         for move in legal_moves:
-            successor = self.game.successor_func(move)
-            if successor:
-                if self.game.current_player == self.player:
-                    value = self.minimax_alphabeta(successor, self.depth - 1, -math.inf, math.inf, False)
-                    if value > best_value:
-                        best_value = value
-                        best_move = move
-                else:
-                    value = self.minimax_alphabeta(successor, self.depth - 1, -math.inf, math.inf, True)
-                    if value < best_value:
-                        best_value = value
-                        best_move = move
-        
+            new_game = TwixtGame(self.game)
+            new_game.place_pin(*move)
+            value = self.minimax(new_game, self.depth-1, -math.inf, math.inf, False)
+            if value > best_value:
+                best_value = value
+                best_move = move
         return best_move
     
-    def minimax_alphabeta(self, game_state, depth, alpha, beta, maximizing_player):
-        if depth == 0 or game_state.is_game_over():
-            return game_state.evaluate_func()
-        
-        legal_moves = game_state.get_valid_moves()
-        if not legal_moves:
-            return game_state.evaluate_func()
-        
-        if maximizing_player:
+    def minimax(self, game, depth, alpha, beta, maximizing):
+        if depth == 0 or game.game_over:
+            return game.evaluate_func()
+            
+        if maximizing:
             value = -math.inf
-            for move in legal_moves:
-                successor = game_state.successor_func(move)
-                if successor:
-                    value = max(value, self.minimax_alphabeta(successor, depth - 1, alpha, beta, False))
-                    alpha = max(alpha, value)
-                    if alpha >= beta:
-                        break
+            for move in game.get_valid_moves():
+                new_game = TwixtGame(game)
+                new_game.place_pin(*move)
+                value = max(value, self.minimax(new_game, depth-1, alpha, beta, False))
+                alpha = max(alpha, value)
+                if alpha >= beta:
+                    break
             return value
         else:
             value = math.inf
-            for move in legal_moves:
-                successor = game_state.successor_func(move)
-                if successor:
-                    value = min(value, self.minimax_alphabeta(successor, depth - 1, alpha, beta, True))
-                    beta = min(beta, value)
-                    if alpha >= beta:
-                        break
+            for move in game.get_valid_moves():
+                new_game = TwixtGame(game)
+                new_game.place_pin(*move)
+                value = min(value, self.minimax(new_game, depth-1, alpha, beta, True))
+                beta = min(beta, value)
+                if alpha >= beta:
+                    break
             return value
 
     def make_move(self):
