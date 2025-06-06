@@ -13,8 +13,9 @@ class AIPlayer:
         legal_moves = self.game.get_valid_moves()
         
         for move in legal_moves:
-            new_game = TwixtGame(self.game)
-            new_game.place_pin(*move)
+            new_game = self.game.successor_func(move)
+            if new_game is None:
+                continue
             value = self.minimax(new_game, self.depth-1, -math.inf, math.inf, False)
             if value > best_value:
                 best_value = value
@@ -28,8 +29,9 @@ class AIPlayer:
         if maximizing:
             value = -math.inf
             for move in game.get_valid_moves():
-                new_game = TwixtGame(game)
-                new_game.place_pin(*move)
+                new_game = game.successor_func(move)
+                if new_game is None:
+                    continue
                 value = max(value, self.minimax(new_game, depth-1, alpha, beta, False))
                 alpha = max(alpha, value)
                 if alpha >= beta:
@@ -38,8 +40,9 @@ class AIPlayer:
         else:
             value = math.inf
             for move in game.get_valid_moves():
-                new_game = TwixtGame(game)
-                new_game.place_pin(*move)
+                new_game = game.successor_func(move)
+                if new_game is None:
+                    continue
                 value = min(value, self.minimax(new_game, depth-1, alpha, beta, True))
                 beta = min(beta, value)
                 if alpha >= beta:
