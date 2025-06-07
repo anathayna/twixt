@@ -13,15 +13,20 @@ def main():
         
         if game.current_player == PLAYER_1:
             print(Fore.RED + "ur turn (X)" + Style.RESET_ALL)
+            try:
+                x, y = map(int, input("enter coordinates (x y): ").split())
+                if not game.place_pin(x, y):
+                    print("invalid move. try again.")
+            except ValueError:
+                print("invalid input. enter coordinates separated by spaces.")
         else:
             print(Fore.BLUE + "AI's turn (O)" + Style.RESET_ALL)
+            prev_player = game.current_player
             ai_player.make_move()
-        try:
-            x, y = map(int, input("enter coordinates (x y): ").split())
-            if not game.place_pin(x, y):
-                print("invalid move. try again.")
-        except ValueError:
-            print("invalid input. enter coordinates separated by spaces.")
+
+            if not game.game_over and game.current_player == prev_player:
+                print("ERROR: AI failed to make valid move!")
+                game.game_over = True
 
     if game.game_over:
         game.print_board()

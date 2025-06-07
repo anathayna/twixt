@@ -55,6 +55,7 @@ class TwixtGame:
         self.print_board()
         
         if self.check_win():
+            self.print_board()
             self.game_over = True
             self.winner = self.current_player
         else:
@@ -114,15 +115,17 @@ class TwixtGame:
             return None
             
         new_game = TwixtGame()
-        new_game.board = [row[:] for row in self.board]
-        new_game.board[x][y] = self.current_player
+        new_game.board = copy.deepcopy(self.board)
         new_game.current_player = PLAYER_2 if self.current_player == PLAYER_1 else PLAYER_1
         new_game.game_over = False
         new_game.winner = None
         
-        if new_game.has_connection(self.current_player):
+        if new_game.check_win():
             new_game.game_over = True
             new_game.winner = self.current_player
+        else:
+            new_game.current_player = PLAYER_2 if self.current_player == PLAYER_1 else PLAYER_1
+        
         return new_game
     
     def is_game_over(self):
