@@ -52,46 +52,49 @@ class TwixtGame:
             return False
             
         self.board[x][y] = self.current_player
+        self.print_board()
         
         if self.check_win():
             self.game_over = True
             self.winner = self.current_player
-            self.print_board()
         else:
-            self.current_player = PLAYER_2 if self.current_player == PLAYER_1 else PLAYER_1
             if not self.get_valid_moves():
                 self.game_over = True
-                self.winner = None
+            else:
+                self.switch_player()
                 
         return True
 
     def check_win(self):
-        if self.current_player == PLAYER_1:
-            for start_y in range(BOARD_SIZE):
-                if self.board[0][start_y] == PLAYER_1:
-                    for end_y in range(BOARD_SIZE):
-                        if self.board[BOARD_SIZE-1][end_y] == PLAYER_1 and self.check_connection(0, start_y, BOARD_SIZE-1, end_y):
-                            return True
-        else:
-            for start_x in range(BOARD_SIZE):
-                if self.board[start_x][0] == PLAYER_2:
-                    for end_x in range(BOARD_SIZE):
-                        if self.board[end_x][BOARD_SIZE-1] == PLAYER_2 and self.check_connection(start_x, 0, end_x, BOARD_SIZE-1):
-                            return True
+        return self.has_connection(self.current_player)
 
-    def check_connection(self, start_x, start_y, target_x, target_y):
-        visited = [[False for _ in range(BOARD_SIZE)] for _ in range(BOARD_SIZE)]
-        stack = [(start_x, start_y)]
-        while stack:
-            cx, cy = stack.pop()
-            if cx == target_x and cy == target_y:
+    def has_connection(self, player):
+        visited = [[False] * BOARD_SIZE for _ in range(BOARD_SIZE)]
+        queue = deque()
+
+        if player == PLAYER_1:
+            start_points = [(0, y) for y in range(BOARD_SIZE) if self.board[0][y] == player]
+            is_goal = lambda x, y: x == BOARD_SIZE - 1
+        else:
+            start_points = [(x, 0) for x in range(BOARD_SIZE) if self.board[x][0] == player]
+            is_goal = lambda x, y: y == BOARD_SIZE - 1
+
+        for x, y in start_points:
+            queue.append((x, y))
+            visited[x][y] = True
+
+        while queue:
+            x, y = queue.popleft()
+            if is_goal(x, y):
                 return True
-            if not visited[cx][cy]:
-                visited[cx][cy] = True
-                for dx, dy in DIRECTIONS:
-                    nx, ny = cx + dx, cy + dy
-                    if 0 <= nx < BOARD_SIZE and 0 <= ny < BOARD_SIZE and self.board[nx][ny] == self.current_player:
-                        stack.append((nx, ny))
+            for dx, dy in DIRECTIONS:
+                nx, ny = x + dx, y + dy
+                if (0 <= nx < BOARD_SIZE and 0 <= ny < BOARD_SIZE
+                    and not visited[nx][ny]
+                    and self.board[nx][ny] == player
+                ):
+                    visited[nx][ny] = True
+                    queue.append((nx, ny))
         return False
     
     def get_valid_moves(self):
@@ -102,24 +105,24 @@ class TwixtGame:
                     moves.append((i, j))
         return moves
     
+    def switch_player(self):
+        self.current_player = PLAYER_2 if self.current_player == PLAYER_1 else PLAYER_1
+    
     def successor_func(self, move):
         x, y = move
         if not self.is_valid_move(x, y):
             return None
-        
+            
         new_game = TwixtGame()
-        new_game.board = copy.deepcopy(self.board)
-        new_game.current_player = self.current_player
-        new_game.game_over = self.game_over
-        new_game.winner = self.winner
-        
+        new_game.board = [row[:] for row in self.board]
         new_game.board[x][y] = self.current_player
-        if new_game.check_win():
+        new_game.current_player = PLAYER_2 if self.current_player == PLAYER_1 else PLAYER_1
+        new_game.game_over = False
+        new_game.winner = None
+        
+        if new_game.has_connection(self.current_player):
             new_game.game_over = True
             new_game.winner = self.current_player
-        else:
-            new_game.current_player = PLAYER_2 if self.current_player == PLAYER_1 else PLAYER_1
-        
         return new_game
     
     def is_game_over(self):
@@ -214,20 +217,3 @@ class TwixtGame:
                                             (BOARD_SIZE-1 - i) + j, (BOARD_SIZE-1 - i) + (BOARD_SIZE-1 - j))
                     score -= (BOARD_SIZE - distance_to_corner)
         return score
-
-    def play(self):
-        print(Fore.RED + "player 1 (X) connect top to bottom." + Style.RESET_ALL)
-        print(Fore.BLUE + "player 2 (O) connect left to right." + Style.RESET_ALL)
-        while not self.game_over:
-            self.print_board()
-            
-            if self.current_player == PLAYER_1:
-                print(Fore.RED + f"player {self.current_player} turn" + Style.RESET_ALL)
-            else:
-                print(Fore.BLUE + f"player {self.current_player} turn" + Style.RESET_ALL)
-            try:
-                x, y = map(int, input("coordinates (x y): ").split())
-                if not self.place_pin(x, y):
-                    print("invalid move. try again.")
-            except ValueError:
-                print("invalid input. enter coordinates separated by spaces.")
