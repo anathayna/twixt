@@ -1,7 +1,7 @@
 from game import *
 import math
 
-class AIPlayer:
+class MinimaxAIPlayer:
     def __init__(self, game, player, depth=3):
         self.game = game
         self.player = player
