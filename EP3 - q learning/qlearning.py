@@ -95,6 +95,7 @@ class QLearningAIPlayer:
             return success
         return False
 
+    @staticmethod
     def train_agent(episodes=10000, save_interval=1000, minimax_depth=3):
         agent = QLearningAgent()
         wins = []
@@ -152,10 +153,14 @@ class QLearningAIPlayer:
                 evaluation_results.append(eval_win_rate)
                 print(f"  evaluation against minimax: {eval_win_rate:.2f}")
                 
-                agent.save_data('twixt_q_learning_temp.pkl')
-                os.replace('twixt_q_learning_temp.pkl', 'twixt_q_learning.pkl')
+                agent.save_data('twixt_q_learning_temp.pkl', async_save=False)
+
+                if os.path.exists('twixt_q_learning_temp.pkl'):
+                    os.replace('twixt_q_learning_temp.pkl', 'twixt_q_learning.pkl')
+                else:
+                    print("warning: temp file not created!")
         
-        agent.save_data('twixt_q_learning_final.pkl')
+        agent.save_data('twixt_q_learning_final.pkl', async_save=False)
         return agent, evaluation_results
 
     def evaluate_against_minimax(agent, minimax_depth, games=50):
