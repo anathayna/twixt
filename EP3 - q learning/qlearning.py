@@ -5,7 +5,7 @@ import os
 import random
 import threading
 from game import TwixtGame, PLAYER_1, PLAYER_2
-from minimax import MinimaxAIPlayer
+from minimax import *
 
 class QLearningAgent:
     def __init__(self, alpha=0.1, gamma=0.9, epsilon=1.0, min_epsilon=0.01, decay=0.9995):
@@ -18,10 +18,7 @@ class QLearningAgent:
         self.training_data = []
         
     def get_state_representation(self, game):
-        return (
-            tuple(tuple(row) for row in game.board),
-            game.current_player
-        )
+        return game.get_state_str()
     
     def get_valid_actions(self, game):
         return game.get_valid_moves()
@@ -98,84 +95,166 @@ class QLearningAIPlayer:
             return success
         return False
 
-def train_agent(episodes=10000, save_interval=1000, minimax_depth=3):
-    agent = QLearningAgent()
-    wins = []
-    evaluation_results = []
-    
-    if os.path.exists('twixt_q_learning.pkl'):
-        agent.load_data('twixt_q_learning.pkl')
-    
-    for episode in range(1, episodes + 1):
-        game = TwixtGame()
-        done = False
-        total_reward = 0
+    def train_agent(episodes=10000, save_interval=1000, minimax_depth=3):
+        agent = QLearningAgent()
+        wins = []
+        evaluation_results = []
         
-        while not done:
-            state = agent.get_state_representation(game)
+        if os.path.exists('twixt_q_learning.pkl'):
+            agent.load_data('twixt_q_learning.pkl')
+        
+        for episode in range(1, episodes + 1):
+            game = TwixtGame()
+            done = False
+            total_reward = 0
             
-            if game.current_player == PLAYER_1:
-                action = agent.choose_action(game, training_mode=True)
-                if action is None:
-                    break
-                    
-                x, y = action
-                success = game.place_pin(x, y)
-                if not success:
-                    continue
-
-                if game.winner == PLAYER_1:
-                    reward = 100
-                elif game.winner == PLAYER_2:
-                    reward = -100
-                elif game.is_game_over():
-                    reward = -10  # draws
-                else:
-                    reward = game.evaluate_func() * 0.1
+            while not done:
+                state = agent.get_state_representation(game)
                 
-                next_state = agent.get_state_representation(game)
-                agent.update_q_value(state, action, reward, next_state)
-                total_reward += reward
-            
-            else:
-                minimax_ai = MinimaxAIPlayer(game, PLAYER_2, depth=minimax_depth)
-                minimax_ai.make_move()
-            
-            done = game.is_game_over()
-        
-        wins.append(1 if game.winner == PLAYER_1 else 0)
-        agent.decay_epsilon()
-        agent.training_data.append(total_reward)
-        
-        if episode % save_interval == 0:
-            win_rate = np.mean(wins[-save_interval:]) if wins else 0
-            print(f"episode {episode}: win rate {win_rate:.2f}, epsilon {agent.epsilon:.4f}")
-            
-            eval_win_rate = evaluate_against_minimax(agent, minimax_depth, games=10)
-            evaluation_results.append(eval_win_rate)
-            print(f"  evaluation against minimax: {eval_win_rate:.2f}")
-            
-            agent.save_data('twixt_q_learning_temp.pkl')
-            os.replace('twixt_q_learning_temp.pkl', 'twixt_q_learning.pkl')
-    
-    agent.save_data('twixt_q_learning_final.pkl')
-    return agent, evaluation_results
+                if game.current_player == PLAYER_1:
+                    action = agent.choose_action(game, training_mode=True)
+                    if action is None:
+                        break
+                        
+                    x, y = action
+                    success = game.place_pin(x, y)
+                    if not success:
+                        continue
 
-def evaluate_against_minimax(agent, minimax_depth, games=50):
-    wins = 0
-    for i in range(games):
-        game = TwixtGame()
-        q_player = QLearningAIPlayer(agent)
-        minimax_player = MinimaxAIPlayer(game, PLAYER_2, depth=minimax_depth)
+                    if game.winner == PLAYER_1:
+                        reward = 100
+                    elif game.winner == PLAYER_2:
+                        reward = -100
+                    elif game.is_game_over():
+                        reward = -10  # draws
+                    else:
+                        reward = game.evaluate_func() * 0.1
+                    
+                    next_state = agent.get_state_representation(game)
+                    agent.update_q_value(state, action, reward, next_state)
+                    total_reward += reward
+                
+                else:
+                    minimax_ai = MinimaxAIPlayer(game, PLAYER_2, depth=minimax_depth)
+                    minimax_ai.make_move()
+                
+                done = game.is_game_over()
+            
+            wins.append(1 if game.winner == PLAYER_1 else 0)
+            agent.decay_epsilon()
+            agent.training_data.append(total_reward)
+            
+            if episode % save_interval == 0:
+                win_rate = np.mean(wins[-save_interval:]) if wins else 0
+                print(f"episode {episode}: win rate {win_rate:.2f}, epsilon {agent.epsilon:.4f}")
+                
+                eval_win_rate = QLearningAIPlayer.evaluate_against_minimax(agent, minimax_depth, games=10)
+                evaluation_results.append(eval_win_rate)
+                print(f"  evaluation against minimax: {eval_win_rate:.2f}")
+                
+                agent.save_data('twixt_q_learning_temp.pkl')
+                os.replace('twixt_q_learning_temp.pkl', 'twixt_q_learning.pkl')
         
-        while not game.is_game_over():
-            if game.current_player == PLAYER_1:
-                q_player.make_move(game)
-            else:
-                minimax_player.make_move()
+        agent.save_data('twixt_q_learning_final.pkl')
+        return agent, evaluation_results
+
+    def evaluate_against_minimax(agent, minimax_depth, games=50):
+        wins = 0
+        for i in range(games):
+            game = TwixtGame()
+            q_player = QLearningAIPlayer(agent)
+            minimax_player = MinimaxAIPlayer(game, PLAYER_2, depth=minimax_depth)
+            
+            while not game.is_game_over():
+                if game.current_player == PLAYER_1:
+                    q_player.make_move(game)
+                else:
+                    minimax_player.make_move()
+            
+            if game.winner == PLAYER_1:
+                wins += 1
+            print(f"match {i+1}/{games} - agent wins: {wins}")
         
-        if game.winner == PLAYER_1:
-            wins += 1
-        print(f"match {i+1}/{games} - agent wins: {wins}")
+        return wins / games
+
+    def evaluate_agent(agent, num_games=100):
+        win_count = 0
+        total_score = 0
+        move_counts = []
+        
+        for _ in range(num_games):
+            game = TwixtGame()
+            q_player = QLearningAIPlayer(agent)
+            moves = 0
+            
+            while not game.is_game_over():
+                if game.current_player == PLAYER_1:
+                    q_player.make_move(game)
+                else:
+                    valid_moves = game.get_valid_moves()
+                    if valid_moves:
+                        move = random.choice(valid_moves)
+                        game.place_pin(*move)
+                moves += 1
+            
+            if game.winner == PLAYER_1:
+                win_count += 1
+            move_counts.append(moves)
+            total_score += game.evaluate_func()
+        
+        if num_games == 0:
+            return { 'win_rate': 0, 'avg_score': 0, 'avg_moves': 0 }
+        
+        return {
+            'win_rate': win_count / num_games,
+            'avg_score': total_score / num_games,
+            'avg_moves': sum(move_counts) / num_games
+        }
+
+    def compare_vs_minimax(agent, depth=3, num_games=50):
+        q_wins = 0
+        minimax_wins = 0
+        draws = 0
     
-    return wins / games
+        for _ in range(num_games):
+            game = TwixtGame()
+            q_player = QLearningAIPlayer(agent)
+            minimax = MinimaxAIPlayer(game, PLAYER_2, depth)
+            
+            while not game.is_game_over():
+                if game.current_player == PLAYER_1:
+                    q_player.make_move(game)
+                else:
+                    minimax.make_move()
+            
+            if game.winner == PLAYER_1:
+                q_wins += 1
+            elif game.winner == PLAYER_2:
+                minimax_wins += 1
+            else:
+                draws += 1
+        
+        for _ in range(num_games):
+            game = TwixtGame()
+            minimax = MinimaxAIPlayer(game, PLAYER_1, depth)
+            q_player = QLearningAIPlayer(agent)
+            
+            while not game.is_game_over():
+                if game.current_player == PLAYER_1:
+                    minimax.make_move()
+                else:
+                    q_player.make_move(game)
+            
+            if game.winner == PLAYER_2:
+                q_wins += 1
+            elif game.winner == PLAYER_1:
+                minimax_wins += 1
+            else:
+                draws += 1
+        
+        total_games = 2 * num_games
+        return {
+            'q_win_rate': q_wins / total_games,
+            'minimax_win_rate': minimax_wins / total_games,
+            'draw_rate': draws / total_games
+        }

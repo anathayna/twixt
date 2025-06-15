@@ -2,8 +2,9 @@ from game import *
 from minimax import *
 from qlearning import *
 import time
+import os
 
-def main():
+def play_game():
     game = TwixtGame()
     
     q_agent = QLearningAgent()
@@ -85,6 +86,47 @@ def main():
         print("player 2 (O) wins!")
     else:
         print("draw!")
+
+def main():
+    print("select mode:")
+    print("1. play game")
+    print("2. train q-learning agent")
+    print("3. evaluate trained agent")
+    
+    choice = int(input("option: "))
+    
+    if choice == 1:
+        play_game()
+    elif choice == 2:
+        from train import main_training
+        main_training()
+    elif choice == 3:
+        agent = QLearningAgent()
+        
+        if os.path.exists('twixt_q_learning_final.pkl'):
+            agent.load_data('twixt_q_learning_final.pkl')
+            print("trained agent loaded successfully.")
+        else:
+            print("no trained agent found. please train first.")
+            return
+        
+        print("\nevaluating against random player...")
+        metrics = QLearningAIPlayer.evaluate_agent(agent, num_games=100)
+        
+        print("\nevaluation results:")
+        print(f"win rate: {metrics['win_rate']:.2%}")
+        print(f"average score: {metrics['avg_score']:.2f}")
+        print(f"average moves per game: {metrics['avg_moves']:.1f}")
+        
+        print("\nevaluating against minimax...")
+        comparison = QLearningAIPlayer.compare_vs_minimax(agent, depth=3, num_games=50)
+        
+        print("\ncomparison with minimax:")
+        print(f"q-learning win rate: {comparison['q_win_rate']:.2%}")
+        print(f"minimax win rate: {comparison['minimax_win_rate']:.2%}")
+        print(f"draw rate: {comparison['draw_rate']:.2%}")
+    else:
+        print("invalid option")
 
 if __name__ == "__main__":
     main()

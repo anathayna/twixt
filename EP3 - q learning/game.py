@@ -134,9 +134,9 @@ class TwixtGame:
     def evaluate_func(self):
         if self.game_over:
             if self.winner == PLAYER_1:
-                return math.inf
+                return 10000
             elif self.winner == PLAYER_2:
-                return -math.inf
+                return -10000
             else:
                 return 0
         
@@ -220,3 +220,15 @@ class TwixtGame:
                                             (BOARD_SIZE-1 - i) + j, (BOARD_SIZE-1 - i) + (BOARD_SIZE-1 - j))
                     score -= (BOARD_SIZE - distance_to_corner)
         return score
+
+    def get_state_str(self):
+        state_str = ""
+        for row in self.board:
+            for cell in row:
+                if cell == PLAYER_1:
+                    state_str += '1'
+                elif cell == PLAYER_2:
+                    state_str += '2'
+                else:
+                    state_str += '0'
+        return state_str

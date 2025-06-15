@@ -1,0 +1,11 @@
+q-learning agent evaluation report
+==================================================
+overall win rate: 52.60%
+average score: 520.00
+moves per game: 26.5
+
+comparison with minimax
+--------------------------------------------------
+q-learning wins: 48.00%
+minimax wins: 52.00%
+draws: 0.00%

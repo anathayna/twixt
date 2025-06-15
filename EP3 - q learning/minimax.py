@@ -53,6 +53,6 @@ class MinimaxAIPlayer:
         best_move = self.get_best_move()
         if best_move:
             x, y = best_move
-            print(f"AI ({self.player}) played at ({x}, {y})")
+            print(f"minimax ({self.player}) played at ({x}, {y})")
             return self.game.place_pin(x, y)
         return False
